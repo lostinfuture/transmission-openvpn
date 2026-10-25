@@ -1,0 +1,55 @@
+{
+  "groups": {},
+  "regions": [
+    {
+      "id": "auto_nopf",
+      "name": "Auto No PF",
+      "country": "XX",
+      "dns": "nopf.example",
+      "auto_region": true,
+      "port_forward": false,
+      "offline": false,
+      "servers": {
+        "ovpnudp": [
+          {
+            "ip": "203.0.113.3",
+            "cn": "nopf",
+            "van": true
+          }
+        ],
+        "ovpntcp": [
+          {
+            "ip": "203.0.113.4",
+            "cn": "nopf",
+            "van": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "nl_amsterdam",
+      "name": "Netherlands",
+      "country": "NL",
+      "dns": "nl-amsterdam.privacy.network",
+      "auto_region": true,
+      "port_forward": true,
+      "offline": false,
+      "servers": {
+        "ovpnudp": [
+          {
+            "ip": "195.78.54.102",
+            "cn": "amsterdam425",
+            "van": true
+          }
+        ],
+        "ovpntcp": [
+          {
+            "ip": "195.78.54.89",
+            "cn": "amsterdam425",
+            "van": true
+          }
+        ]
+      }
+    }
+  ]
+}

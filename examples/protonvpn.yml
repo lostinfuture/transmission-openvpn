@@ -1,0 +1,33 @@
+# ProtonVPN uses a baked file. OPENVPN_CONFIG is that name without .ovpn.
+# nl.protonvpn.udp is an example. list-providers prints the names in the image.
+# There is no custom ovpn mount.
+# Username and password are Proton OpenVPN credentials from the environment.
+# When PORT_FORWARD is unset, protonvpn sets PORT_FORWARD=natpmp unless DISABLE_PORT_UPDATER=true.
+# SELFHEAL is unset, so it stays false. It would restart OpenVPN in this process.
+# Docker restart: and willfarrell/autoheal are different, and this file enables neither.
+# Custom-provider quick start: docker-compose.yml. This file sets no restart policy and leaves SELFHEAL unset.
+services:
+  transmission-openvpn:
+    image: ghcr.io/lostinfuture/transmission-openvpn:edge
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 45s
+    ports:
+      - "9091:9091"
+    tmpfs:
+      - /run
+    volumes:
+      - /srv/torrents:/data
+      - /srv/transmission-config:/config
+    environment:
+      OPENVPN_PROVIDER: protonvpn
+      OPENVPN_CONFIG: nl.protonvpn.udp
+      OPENVPN_USERNAME: ${OPENVPN_USERNAME}
+      OPENVPN_PASSWORD: ${OPENVPN_PASSWORD}
+      LOCAL_NETWORK: 192.168.1.0/24
+      PUID: "1000"
+      PGID: "1000"

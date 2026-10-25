@@ -1,0 +1,33 @@
+# PIA builds a UDP config from the public server list. There is no ovpn mount and no PIA_PROTOCOL.
+# OPENVPN_CONFIG is a region id or name. Empty selects the first online auto region with port forwarding.
+# PIA_TOKEN, when set, is the port-forward token. When the OpenVPN username is empty, that token
+# is split into the OpenVPN username and password. When the username and password are both set
+# and PIA_TOKEN is empty, the supervisor requests a token. The account password is not the token.
+# Port forward runs after hook-up, uses the pinned CA, and is bound to the tun address.
+# SELFHEAL is unset, so it stays false. It would restart OpenVPN in this process.
+# Docker restart: and willfarrell/autoheal are different, and this file enables neither.
+# Custom-provider quick start: docker-compose.yml. This file sets no restart policy and leaves SELFHEAL unset.
+services:
+  transmission-openvpn:
+    image: ghcr.io/lostinfuture/transmission-openvpn:edge
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 45s
+    ports:
+      - "9091:9091"
+    tmpfs:
+      - /run
+    volumes:
+      - /srv/torrents:/data
+      - /srv/transmission-config:/config
+    environment:
+      OPENVPN_PROVIDER: pia
+      OPENVPN_CONFIG: nl_amsterdam
+      PIA_TOKEN: ${PIA_TOKEN}
+      LOCAL_NETWORK: 192.168.1.0/24
+      PUID: "1000"
+      PGID: "1000"

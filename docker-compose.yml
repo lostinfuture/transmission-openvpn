@@ -1,0 +1,52 @@
+# Quick start for your own OpenVPN config.
+# The mounted directory must contain vpn.ovpn (OPENVPN_CONFIG).
+# restart brings the container back when Docker starts. It is not SELFHEAL.
+# SELFHEAL stays unset. Rustnet stays off. See examples/rustnet.override.yml.
+# Put OPENVPN_USERNAME and OPENVPN_PASSWORD in the environment or a .env file.
+services:
+  transmission-openvpn:
+    image: ghcr.io/lostinfuture/transmission-openvpn:edge
+    # After a version tag, :latest and :0.1.0 are also published.
+    # Docker Hub, when the DOCKER_PASSWORD secret is set on the repo:
+    # image: lostinfuture/transmission-openvpn:latest
+    # Local build: image: transmission-openvpn:dev
+    container_name: transmission-openvpn
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 45s
+    ports:
+      - "9091:9091"
+    tmpfs:
+      - /run
+    environment:
+      OPENVPN_PROVIDER: custom
+      OPENVPN_CONFIG: vpn
+      OPENVPN_USERNAME: ${OPENVPN_USERNAME}
+      OPENVPN_PASSWORD: ${OPENVPN_PASSWORD}
+      # Your LAN. Routes to this prefix use the original gateway.
+      LOCAL_NETWORK: 192.168.1.0/24
+      PUID: "1000"
+      PGID: "1000"
+      # Optional. Unset leaves the web UI open on the published port.
+      # TRANSMISSION_RPC_USERNAME: transmission
+      # TRANSMISSION_RPC_PASSWORD: ${TRANSMISSION_RPC_PASSWORD}
+    volumes:
+      - /path/to/downloads:/data
+      - /path/to/transmission/config:/config
+      - /path/to/ovpn:/etc/openvpn/custom:ro
+    healthcheck:
+      test: ["CMD", "/usr/bin/ovpn-supervisor", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

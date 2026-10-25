@@ -1,0 +1,33 @@
+# Custom provider, without a Docker restart policy.
+# docker-compose.yml is the same setup with restart: unless-stopped.
+# That policy is not SELFHEAL. SELFHEAL stays unset here.
+# Do not put a password in this file. Use the environment or a secret.
+# NET_ADMIN is the tunnel. There is no SYS_ADMIN and no --privileged.
+# ENABLE_RUSTNET defaults to false. Add examples/rustnet.override.yml to turn it on.
+# Local build: image: transmission-openvpn:dev
+services:
+  transmission-openvpn:
+    image: ghcr.io/lostinfuture/transmission-openvpn:edge
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 45s
+    ports:
+      - "9091:9091"
+    tmpfs:
+      - /run
+    volumes:
+      - /srv/torrents:/data
+      - /srv/transmission-config:/config
+      - /path/to/ovpn:/etc/openvpn/custom:ro
+    environment:
+      OPENVPN_PROVIDER: custom
+      OPENVPN_CONFIG: vpn
+      OPENVPN_USERNAME: ${OPENVPN_USERNAME}
+      OPENVPN_PASSWORD: ${OPENVPN_PASSWORD}
+      LOCAL_NETWORK: 192.168.1.0/24
+      PUID: "1000"
+      PGID: "1000"

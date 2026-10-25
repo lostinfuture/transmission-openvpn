@@ -1,0 +1,31 @@
+# AirVPN from the baked snapshot. The image has /etc/openvpn/airvpn/default.ovpn only.
+# OPENVPN_CONFIG empty or default selects that file. There is no custom ovpn mount.
+# Username and password come from the environment. Do not put a password in this file.
+# SELFHEAL is unset, so it stays false. It would restart OpenVPN in this process.
+# Docker restart: and willfarrell/autoheal are different, and this file enables neither.
+# Custom-provider quick start: docker-compose.yml. This file sets no restart policy and leaves SELFHEAL unset.
+services:
+  transmission-openvpn:
+    image: ghcr.io/lostinfuture/transmission-openvpn:edge
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 45s
+    ports:
+      - "9091:9091"
+    tmpfs:
+      - /run
+    volumes:
+      - /srv/torrents:/data
+      - /srv/transmission-config:/config
+    environment:
+      OPENVPN_PROVIDER: airvpn
+      OPENVPN_CONFIG: default
+      OPENVPN_USERNAME: ${OPENVPN_USERNAME}
+      OPENVPN_PASSWORD: ${OPENVPN_PASSWORD}
+      LOCAL_NETWORK: 192.168.1.0/24
+      PUID: "1000"
+      PGID: "1000"

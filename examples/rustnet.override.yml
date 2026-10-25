@@ -1,0 +1,15 @@
+# Opt-in Rustnet. Compose replaces cap_add; it does not merge the lists.
+# This file repeats NET_ADMIN and adds the capture capabilities.
+#   docker compose -f examples/custom.yml -f examples/rustnet.override.yml up
+# The BTF mount is read-only. There is no SYS_ADMIN and no --privileged.
+services:
+  transmission-openvpn:
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - BPF
+      - PERFMON
+    volumes:
+      - /sys/kernel/btf:/sys/kernel/btf:ro
+    environment:
+      ENABLE_RUSTNET: "true"

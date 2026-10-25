@@ -1,0 +1,35 @@
+# Local OpenVPN material and secrets. Testdata fixtures stay tracked.
+*.ovpn
+*.conf
+!internal/**/testdata/**
+!internal/**/testdata/**/*
+openvpn-credentials.txt
+*.credentials
+*.pem
+*.key
+*.p12
+*.pfx
+.env
+.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Local review notes. Not part of the public repo.
+/private/
+
+# Build output
+/ovpn-supervisor
+/dist/
+*.exe
+coverage.out
+*.test
+transmission-openvpn-dev.tar
+
+# Editor and OS files
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store

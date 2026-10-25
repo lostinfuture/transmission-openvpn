@@ -1,0 +1,11 @@
+.git
+private
+README.md
+examples
+*.ovpn
+*.conf
+*.credentials
+.env
+.env.*
+__pycache__/
+*.py[cod]
