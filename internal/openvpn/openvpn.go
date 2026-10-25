@@ -12,8 +12,9 @@ import (
 
 const (
 	authPath = "/run/openvpn/auth"
-	hookUp   = "/usr/bin/ovpn-supervisor hook-up"
-	hookDown = "/usr/bin/ovpn-supervisor hook-down"
+	// OpenVPN 2.7 allows one parameter. The program and its argument are one quoted value.
+	hookUp   = `"/usr/bin/ovpn-supervisor hook-up"`
+	hookDown = `"/usr/bin/ovpn-supervisor hook-down"`
 	// FetchedRoot is where a github config tarball is extracted.
 	// Absolute /etc/openvpn paths in those files are rewritten under this prefix.
 	FetchedRoot = "/run/openvpn/fetched"

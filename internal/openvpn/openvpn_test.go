@@ -32,7 +32,7 @@ func TestContribNobody(t *testing.T) {
 	if strings.Count(res.Config, "script-security") != 1 || !strings.Contains(res.Config, "script-security 2") {
 		t.Fatalf("script-security lines:\n%s", res.Config)
 	}
-	if !strings.Contains(res.Config, "route-up /usr/bin/ovpn-supervisor hook-up") || !strings.Contains(res.Config, "route-pre-down /usr/bin/ovpn-supervisor hook-down") {
+	if !strings.Contains(res.Config, `route-up "/usr/bin/ovpn-supervisor hook-up"`) || !strings.Contains(res.Config, `route-pre-down "/usr/bin/ovpn-supervisor hook-down"`) {
 		t.Fatal(res.Config)
 	}
 	if !strings.Contains(res.Config, "dns-updown disable") || !strings.Contains(res.Config, "allow-compression no") {
