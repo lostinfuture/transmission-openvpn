@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 ARG ALPINE_VERSION=3.24
-ARG SUPERVISOR_VERSION=0.1.0-dev
+ARG SUPERVISOR_VERSION=0.2.0
 ARG TRANSMISSION_VERSION=4.1.4
 ARG TRANSMISSION_URL=https://github.com/transmission/transmission/releases/download/4.1.4/transmission-4.1.4.tar.xz
 ARG TRANSMISSION_SHA256=86e7aa020cdf64826447034bc85f4d3b7c848d8c0891d9dc9b9fddfb2c805d22

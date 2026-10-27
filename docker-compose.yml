@@ -6,7 +6,7 @@
 services:
   transmission-openvpn:
     image: ghcr.io/lostinfuture/transmission-openvpn:edge
-    # After a version tag, :latest and :0.1.0 are also published.
+    # After a version tag, :latest and :0.2.0 are also published.
     # Docker Hub, when the DOCKER_PASSWORD secret is set on the repo:
     # image: lostinfuture/transmission-openvpn:latest
     # Local build: image: transmission-openvpn:dev
@@ -35,6 +35,8 @@ services:
       # Optional. Unset leaves the web UI open on the published port.
       # TRANSMISSION_RPC_USERNAME: transmission
       # TRANSMISSION_RPC_PASSWORD: ${TRANSMISSION_RPC_PASSWORD}
+      # Disk cache in MiB. Transmission's own default is 4. 0 disables it.
+      # TRANSMISSION_CACHE_SIZE_MIB: "512"
     volumes:
       - /path/to/downloads:/data
       - /path/to/transmission/config:/config

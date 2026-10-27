@@ -33,6 +33,8 @@ func Merge(dump, user map[string]any, env []string, opt Options) (map[string]any
 	for k, v := range user {
 		out[snake(k)] = v
 	}
+	// Transmission 4.1 reads cache_size_mib. snake("cache-size-mb") is cache_size_mb, which it ignores.
+	promoteCache(out, user)
 	em := map[string]string{}
 	for _, e := range env {
 		k, v, ok := strings.Cut(e, "=")
@@ -40,8 +42,14 @@ func Merge(dump, user map[string]any, env []string, opt Options) (map[string]any
 			em[k] = v
 		}
 	}
+	if err := applyCacheEnv(out, em); err != nil {
+		return nil, err
+	}
 	envSet := map[string]bool{}
 	for key := range out {
+		if isCacheKey(key) {
+			continue
+		}
 		name := envName(key)
 		raw, ok := em[name]
 		if !ok {
@@ -117,6 +125,77 @@ func (o Options) dir(v, def string) string {
 
 func envName(key string) string {
 	return "TRANSMISSION_" + strings.ToUpper(strings.ReplaceAll(key, "-", "_"))
+}
+
+func isCacheKey(key string) bool {
+	switch snake(key) {
+	case "cache_size_mb", "cache_size_mib":
+		return true
+	default:
+		return false
+	}
+}
+
+// cacheFrom reads the disk-cache value from a settings object.
+// Later keys win: obsolete cache_size_mb, then the 4.0 name cache-size-mb, then cache_size_mib.
+func cacheFrom(m map[string]any) (any, bool) {
+	var val any
+	found := false
+	for _, key := range []string{"cache_size_mb", "cache-size-mb", "cache-size-mib", "cache_size_mib"} {
+		v, ok := m[key]
+		if !ok {
+			continue
+		}
+		val = v
+		found = true
+	}
+	return val, found
+}
+
+func promoteCache(out, user map[string]any) {
+	if v, ok := cacheFrom(user); ok {
+		out["cache_size_mib"] = v
+	} else if _, ok := out["cache_size_mib"]; !ok {
+		if v, ok := out["cache_size_mb"]; ok {
+			out["cache_size_mib"] = v
+		}
+	}
+	delete(out, "cache_size_mb")
+	delete(out, "cache-size-mb")
+	delete(out, "cache-size-mib")
+}
+
+func applyCacheEnv(out map[string]any, em map[string]string) error {
+	mibRaw, hasMIB := em["TRANSMISSION_CACHE_SIZE_MIB"]
+	mbRaw, hasMB := em["TRANSMISSION_CACHE_SIZE_MB"]
+	if !hasMIB && !hasMB {
+		return nil
+	}
+	if hasMIB && hasMB && strings.TrimSpace(mibRaw) != strings.TrimSpace(mbRaw) {
+		return fmt.Errorf("TRANSMISSION_CACHE_SIZE_MIB and TRANSMISSION_CACHE_SIZE_MB disagree")
+	}
+	raw := mbRaw
+	name := "TRANSMISSION_CACHE_SIZE_MB"
+	if hasMIB {
+		raw = mibRaw
+		name = "TRANSMISSION_CACHE_SIZE_MIB"
+	}
+	n, err := parseCacheMiB(raw)
+	if err != nil {
+		return fmt.Errorf("%s: %w", name, err)
+	}
+	out["cache_size_mib"] = float64(n)
+	delete(out, "cache_size_mb")
+	return nil
+}
+
+func parseCacheMiB(raw string) (int64, error) {
+	raw = strings.TrimSpace(raw)
+	n, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || n < 0 {
+		return 0, fmt.Errorf("want a non-negative integer, got %q", raw)
+	}
+	return n, nil
 }
 
 func snake(key string) string {

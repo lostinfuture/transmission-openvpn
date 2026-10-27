@@ -120,6 +120,8 @@ Setting either one turns RPC authentication on. Leave both unset and the port st
 
 `TRANSMISSION_RPC_PORT` overrides `9091`. Publish the same port you set.
 
+`TRANSMISSION_CACHE_SIZE_MIB` sets Transmission 4.1's `cache_size_mib` when the container starts. A value already stored as `cache-size-mb` in `settings.json` is kept unless this variable is set. The variable wins over the file.
+
 ## If something feels wrong
 
 - **The container exits before OpenVPN.** The ovpn mount is missing, or `OPENVPN_CONFIG` does not match the file name. `vpn` means `vpn.ovpn` inside the mount.
@@ -142,6 +144,7 @@ Setting either one turns RPC authentication on. Leave both unset and the port st
 | `TRANSMISSION_RPC_USERNAME`, `TRANSMISSION_RPC_PASSWORD` | empty | Set both to require a login on the web UI. |
 | `TRANSMISSION_WEB_UI` | empty | Empty is the stock UI. `flood-for-transmission` (alias `flood`) or `transmissionic`. |
 | `TRANSMISSION_MESSAGE_LEVEL` | Transmission's own default, `4` | `2` is error on the 4.x scale. |
+| `TRANSMISSION_CACHE_SIZE_MIB` | Transmission's own default, `4` | Disk cache in MiB. `0` turns it off. `TRANSMISSION_CACHE_SIZE_MB` sets the same value. |
 | `PORT_FORWARD` | empty | `natpmp` asks the tun gateway for a port. Proton sets this when it is empty. |
 | `PIA_TOKEN` | empty | PIA port-forward token. See the provider section. |
 | `NORDVPN_COUNTRY` | empty | ISO code. Empty allows any country. |
@@ -194,11 +197,11 @@ Three separate mechanisms. The root Compose file enables only the first.
 
 ## Pull the image
 
-GitHub Container Registry is published from this repo. `edge` moves on `main` and on the Monday rebuild. A version tag such as `v0.1.0` also publishes `0.1.0`, `v0.1.0`, `0.1`, `0`, and `latest`.
+GitHub Container Registry is published from this repo. `edge` moves on `main` and on the Monday rebuild. A version tag such as `v0.2.0` also publishes `0.2.0`, `v0.2.0`, `0.2`, `0`, and `latest`.
 
 ```bash
 docker pull ghcr.io/lostinfuture/transmission-openvpn:edge
-docker pull ghcr.io/lostinfuture/transmission-openvpn:0.1.0
+docker pull ghcr.io/lostinfuture/transmission-openvpn:0.2.0
 ```
 
 Docker Hub uses the same tags when the repository secret `DOCKER_PASSWORD` is set. `DOCKER_USERNAME` defaults to `lostinfuture`.

@@ -107,6 +107,94 @@ func TestMergeRejectsNonFinite(t *testing.T) {
 	}
 }
 
+func TestMergeCacheFromLegacyName(t *testing.T) {
+	dump := cacheDump()
+	user := map[string]any{"cache-size-mb": float64(64), "cache_size_mb": float64(4)}
+	got, err := Merge(dump, user, nil, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got["cache_size_mib"] != float64(64) {
+		t.Fatalf("cache_size_mib = %#v", got["cache_size_mib"])
+	}
+	if _, ok := got["cache_size_mb"]; ok {
+		t.Fatal("obsolete cache_size_mb was kept")
+	}
+	if _, ok := got["cache-size-mb"]; ok {
+		t.Fatal("kebab cache-size-mb was kept")
+	}
+}
+
+func TestMergeCacheCanonicalWins(t *testing.T) {
+	dump := cacheDump()
+	user := map[string]any{"cache-size-mb": float64(4), "cache_size_mib": float64(512)}
+	got, err := Merge(dump, user, nil, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got["cache_size_mib"] != float64(512) {
+		t.Fatalf("cache_size_mib = %#v", got["cache_size_mib"])
+	}
+}
+
+func TestMergeCacheEnv(t *testing.T) {
+	dump := cacheDump()
+	user := map[string]any{"cache-size-mb": float64(4)}
+	got, err := Merge(dump, user, []string{"TRANSMISSION_CACHE_SIZE_MIB=512"}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got["cache_size_mib"] != float64(512) {
+		t.Fatalf("cache_size_mib = %#v", got["cache_size_mib"])
+	}
+	got, err = Merge(dump, user, []string{"TRANSMISSION_CACHE_SIZE_MB=256"}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got["cache_size_mib"] != float64(256) {
+		t.Fatalf("alias cache_size_mib = %#v", got["cache_size_mib"])
+	}
+	got, err = Merge(dump, nil, []string{"TRANSMISSION_CACHE_SIZE_MIB=0"}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got["cache_size_mib"] != float64(0) {
+		t.Fatalf("zero cache = %#v", got["cache_size_mib"])
+	}
+}
+
+func TestMergeCacheEnvRejects(t *testing.T) {
+	dump := cacheDump()
+	if _, err := Merge(dump, nil, []string{"TRANSMISSION_CACHE_SIZE_MIB=-1"}, Options{}); err == nil {
+		t.Fatal("expected negative rejection")
+	}
+	if _, err := Merge(dump, nil, []string{"TRANSMISSION_CACHE_SIZE_MIB=512.5"}, Options{}); err == nil {
+		t.Fatal("expected fractional rejection")
+	}
+	if _, err := Merge(dump, nil, []string{"TRANSMISSION_CACHE_SIZE_MIB=512", "TRANSMISSION_CACHE_SIZE_MB=256"}, Options{}); err == nil {
+		t.Fatal("expected disagreeing cache env rejection")
+	}
+	got, err := Merge(dump, nil, []string{"TRANSMISSION_CACHE_SIZE_MIB=512", "TRANSMISSION_CACHE_SIZE_MB=512"}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got["cache_size_mib"] != float64(512) {
+		t.Fatalf("agreeing env cache_size_mib = %#v", got["cache_size_mib"])
+	}
+}
+
+func cacheDump() map[string]any {
+	return map[string]any{
+		"cache-size-mb":          float64(4),
+		"download_dir":           "/root/Downloads",
+		"incomplete_dir":         "/root/Downloads",
+		"incomplete_dir_enabled": false,
+		"watch_dir":              "",
+		"watch_dir_enabled":      false,
+		"rpc_whitelist_enabled":  true,
+	}
+}
+
 func TestMessageLevelNotImplied(t *testing.T) {
 	dump := map[string]any{"message_level": float64(4), "download_dir": "/root/Downloads", "incomplete_dir": "/root/Downloads", "incomplete_dir_enabled": false, "watch_dir": "", "watch_dir_enabled": false, "rpc_whitelist_enabled": true}
 	got, err := Merge(dump, nil, nil, Options{})
