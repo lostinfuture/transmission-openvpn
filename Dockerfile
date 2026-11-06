@@ -1,6 +1,9 @@
 # syntax=docker/dockerfile:1
 
-ARG ALPINE_VERSION=3.24
+# CVE-2026-107891 (musl regcomp integer overflow) is fixed in Alpine musl 1.2.6-r3.
+# Upstream musl 1.2.7 has the same fix. 3.24.4 is the current 3.24 point release.
+ARG ALPINE_VERSION=3.24.4
+ARG MUSL_MIN_VERSION=1.2.6-r3
 ARG SUPERVISOR_VERSION=0.2.0
 ARG TRANSMISSION_VERSION=4.1.4
 ARG TRANSMISSION_URL=https://github.com/transmission/transmission/releases/download/4.1.4/transmission-4.1.4.tar.xz
@@ -59,7 +62,9 @@ RUN apk add --no-cache go \
          -o /out/ovpn-supervisor ./cmd/ovpn-supervisor
 
 FROM alpine:${ALPINE_VERSION} AS transmission-build
+ARG MUSL_MIN_VERSION
 RUN apk add --no-cache \
+        "musl>=${MUSL_MIN_VERSION}" \
         build-base cmake samurai pkgconf \
         openssl-dev curl-dev libevent-dev libdeflate-dev libpsl-dev linux-headers libcap
 COPY --from=transmission-src /src /src
@@ -98,7 +103,9 @@ RUN cmake -S . -B build -G Ninja \
     && if getcap /usr/bin/transmission-daemon | grep -q .; then exit 1; fi
 
 FROM alpine:${ALPINE_VERSION} AS openvpn-build
+ARG MUSL_MIN_VERSION
 RUN apk add --no-cache \
+        "musl>=${MUSL_MIN_VERSION}" \
         build-base pkgconf openssl-dev linux-headers \
         libnl3-dev libcap-ng-dev iproute2 libcap
 COPY --from=openvpn-src /src /src
@@ -180,11 +187,13 @@ RUN apk add --no-cache ca-certificates wget unzip \
 
 FROM alpine:${ALPINE_VERSION} AS rustnet
 ARG TARGETARCH RUSTNET_URL RUSTNET_SHA256 RUSTNET_VERSION
+ARG MUSL_MIN_VERSION
 RUN mkdir -p /out/bin /out/licenses \
     && if [ "${RUSTNET_SHA256}" = "UNPINNED" ]; then echo "RUSTNET_SHA256 is UNPINNED" >&2; exit 1; fi \
     && case "${TARGETARCH}" in \
          amd64|arm64) \
-           apk add --no-cache ca-certificates wget build-base \
+           apk add --no-cache "musl>=${MUSL_MIN_VERSION}" \
+             ca-certificates wget build-base \
              cargo rustfmt clang llvm linux-headers \
              libpcap-dev elfutils-dev zlib-dev pkgconf \
            && wget -O /tmp/rustnet.tar.gz "${RUSTNET_URL}" \
@@ -205,7 +214,9 @@ RUN mkdir -p /out/bin /out/licenses \
        esac
 
 FROM alpine:${ALPINE_VERSION}
+ARG MUSL_MIN_VERSION
 RUN apk add --no-cache \
+        "musl>=${MUSL_MIN_VERSION}" \
         ca-certificates \
         tzdata \
         iptables \
@@ -223,7 +234,12 @@ RUN apk add --no-cache \
         libpcap \
         libelf \
         zlib \
-    && apk upgrade --no-cache
+    && apk upgrade --no-cache \
+    && musl_ver="$(awk '$0=="P:musl"{found=1; next} found && /^V:/{sub(/^V:/,""); print; exit} found && NF==0{exit}' /lib/apk/db/installed)" \
+    && case "$(apk version -t "${musl_ver}" "${MUSL_MIN_VERSION}")" in \
+         ">"|"=") ;; \
+         *) echo "musl ${musl_ver:-missing} is older than ${MUSL_MIN_VERSION} (CVE-2026-107891)" >&2; exit 1 ;; \
+       esac
 COPY --from=transmission-build /usr/bin/transmission-daemon /usr/bin/transmission-daemon
 COPY --from=transmission-build /usr/share/transmission/public_html /usr/share/transmission/public_html
 COPY --from=transmission-src /src/COPYING /usr/share/licenses/transmission/COPYING
